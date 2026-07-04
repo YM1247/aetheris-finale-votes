@@ -1,6 +1,7 @@
 let currentState = null;
 let syncingEditor = false;
 let disconnectEvents = null;
+const ADMIN_SESSION_KEY = "aetheris-admin-session-active";
 
 const loginPanel = document.querySelector("#loginPanel");
 const dashboard = document.querySelector("#dashboard");
@@ -38,17 +39,23 @@ function showAdminToast(message) {
 }
 
 function revealDashboard() {
+  sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
 }
 
 function revealLogin() {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
   dashboard.classList.add("hidden");
   loginPanel.classList.remove("hidden");
   if (disconnectEvents) {
     disconnectEvents();
     disconnectEvents = null;
   }
+}
+
+function hasActiveAdminSession() {
+  return sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
 }
 
 function renderTabs(currentQuestionId) {
@@ -165,6 +172,7 @@ resetAll.addEventListener("click", () => {
 });
 
 logoutButton.addEventListener("click", async () => {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
   await signOutAdmin();
   revealLogin();
 });
@@ -175,7 +183,10 @@ voteLink.href = publicVoteUrl;
 qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(publicVoteUrl)}`;
 
 auth.onAuthStateChanged(async (user) => {
-  if (!user) {
+  if (!user || !hasActiveAdminSession()) {
+    if (user) {
+      await signOutAdmin().catch(() => {});
+    }
     revealLogin();
     return;
   }
