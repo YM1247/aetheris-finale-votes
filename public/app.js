@@ -1,11 +1,11 @@
 const OPTION_KEYS = ["optA", "optB", "optC", "optD"];
 const QUESTION_IDS = Array.from({ length: 10 }, (_, index) => `q${index + 1}`);
-const ADMIN_PATH = "admins";
+const ADMIN_SESSION_PATH = "adminSessions";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtaxfc6KQ7Z5G4lugzOscGlcXC-Q5ECuc",
   authDomain: "aetheris-finale-votes.firebaseapp.com",
-  databaseURL: "https://aetheris-finale-votes-default-rtdb.firebaseio.com",
+  databaseURL: "https://aetheris-finale-votes-default-rtdb.asia-southeast1.firebasedatabase.app/",
   projectId: "aetheris-finale-votes",
   storageBucket: "aetheris-finale-votes.firebasestorage.app",
   messagingSenderId: "410310178027",
@@ -186,18 +186,26 @@ async function submitFirebaseVote(questionId, optionId) {
   };
 }
 
-async function signInAdmin(email, password) {
-  const credential = await auth.signInWithEmailAndPassword(email, password);
-  const adminSnapshot = await db.ref(`${ADMIN_PATH}/${credential.user.uid}`).get();
-  if (!adminSnapshot.val()) {
-    await auth.signOut();
-    throw new Error("此帳號尚未被加入管理員名單。");
+async function signInAdmin(username, password) {
+  const user = await ensureAnonymousUser();
+  const credentials = {
+    username: clampText(username, "", 40),
+    password: clampText(password, "", 80),
+    signedInAt: firebase.database.ServerValue.TIMESTAMP
+  };
+  if (!credentials.username || !credentials.password) {
+    throw new Error("請輸入後台帳號與密碼。");
   }
-  return credential.user;
+
+  await db.ref(`${ADMIN_SESSION_PATH}/${user.uid}`).set(credentials);
+  await db.ref().get();
+  return user;
 }
 
 function signOutAdmin() {
-  return auth.signOut();
+  const user = auth.currentUser;
+  if (!user) return Promise.resolve();
+  return db.ref(`${ADMIN_SESSION_PATH}/${user.uid}`).remove();
 }
 
 async function updateQuestion(questionId, title, options) {

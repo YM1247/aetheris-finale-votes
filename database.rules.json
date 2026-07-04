@@ -1,10 +1,10 @@
 {
   "rules": {
-    ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+    ".read": "auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val()",
     ".write": false,
     "systemState": {
       ".read": "auth != null",
-      ".write": "root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val()",
       "currentQuestionId": {
         ".validate": "newData.val() === 'q1' || newData.val() === 'q2' || newData.val() === 'q3' || newData.val() === 'q4' || newData.val() === 'q5' || newData.val() === 'q6' || newData.val() === 'q7' || newData.val() === 'q8' || newData.val() === 'q9' || newData.val() === 'q10'"
       },
@@ -15,7 +15,7 @@
     "questions": {
       ".read": "auth != null",
       "$qid": {
-        ".write": "root.child('admins').child(auth.uid).val() === true",
+        ".write": "auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val()",
         ".validate": "$qid === 'q1' || $qid === 'q2' || $qid === 'q3' || $qid === 'q4' || $qid === 'q5' || $qid === 'q6' || $qid === 'q7' || $qid === 'q8' || $qid === 'q9' || $qid === 'q10'",
         "title": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
@@ -34,21 +34,43 @@
       }
     },
     "userVotes": {
-      ".write": "root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val()",
       "$uid": {
-        ".read": "$uid === auth.uid || root.child('admins').child(auth.uid).val() === true",
+        ".read": "$uid === auth.uid || (auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val())",
         "$qid": {
-          ".write": "root.child('admins').child(auth.uid).val() === true || ($uid === auth.uid && root.child('systemState/status').val() === 'active' && root.child('systemState/currentQuestionId').val() === $qid)",
+          ".write": "(auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val()) || ($uid === auth.uid && root.child('systemState/status').val() === 'active' && root.child('systemState/currentQuestionId').val() === $qid)",
           ".validate": "newData.val() === 'optA' || newData.val() === 'optB' || newData.val() === 'optC' || newData.val() === 'optD'"
         }
       }
     },
-    "admins": {
-      "$uid": {
-        ".read": "$uid === auth.uid || root.child('admins').child(auth.uid).val() === true",
-        ".validate": "newData.val() === true"
+    "adminCredentials": {
+      ".read": false,
+      ".write": "auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val()",
+      "username": {
+        ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
       },
-      ".write": "root.child('admins').child(auth.uid).val() === true"
+      "password": {
+        ".validate": "newData.isString() && newData.val().length >= 6 && newData.val().length <= 80"
+      }
+    },
+    "adminSessions": {
+      "$uid": {
+        ".read": "$uid === auth.uid || (auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val())",
+        ".write": "$uid === auth.uid || (auth != null && root.child('adminSessions').child(auth.uid).child('username').val() === root.child('adminCredentials').child('username').val() && root.child('adminSessions').child(auth.uid).child('password').val() === root.child('adminCredentials').child('password').val())",
+        "username": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
+        },
+        "password": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80"
+        },
+        "signedInAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": "$other === 'username' || $other === 'password' || $other === 'signedInAt'"
+        }
+      },
+      ".indexOn": ["signedInAt"]
     }
   }
 }

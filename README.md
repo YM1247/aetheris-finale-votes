@@ -1,6 +1,6 @@
 # Aetheris Finale Votes
 
-活動現場用的即時投票系統，包含觀眾端 `/vote` 與主辦後台 `/admin`。目前前端使用 Firebase Authentication + Realtime Database 即時同步，可部署到 Firebase Hosting。
+活動現場用的即時投票系統，包含觀眾端 `/vote` 與主辦後台 `/admin`。目前前端使用 Firebase Anonymous Authentication + Realtime Database 即時同步，可部署到 Firebase Hosting。
 
 ## 啟動
 
@@ -36,22 +36,21 @@ Firebase Hosting 會部署 `public/`，因此圖片素材已放在 `public/img/`
 
 第一次設定：
 
-1. 到 Firebase Console 啟用 Authentication 的 `Anonymous` 與 `Email/Password` 登入方式。
-2. 啟用 Realtime Database。若你的 database URL 不是 `https://aetheris-finale-votes-default-rtdb.firebaseio.com`，請修改 `public/app.js` 的 `databaseURL`。
-3. 建立一個 Email/Password 管理員帳號。
-4. 在 Authentication 使用者列表複製這個管理員的 UID。
-5. 在 Realtime Database Console 匯入 `database.seed.json` 作為初始資料。
-6. 在 Realtime Database Console 手動寫入：
+1. 到 Firebase Console 啟用 Authentication 的 `Anonymous` 登入方式。
+2. 啟用 Realtime Database。此專案目前使用 `https://aetheris-finale-votes-default-rtdb.asia-southeast1.firebasedatabase.app/`。
+3. 在 Realtime Database Console 匯入 `database.seed.json` 作為初始資料。
+4. 在 Realtime Database Console 修改：
 
 ```json
 {
-  "admins": {
-    "你的管理員 UID": true
+  "adminCredentials": {
+    "username": "你的後台帳號",
+    "password": "你的後台密碼"
   }
 }
 ```
 
-7. 部署 rules 與 hosting：
+5. 部署 rules 與 hosting：
 
 ```bash
 firebase deploy --only database,hosting
@@ -62,7 +61,7 @@ firebase deploy --only database,hosting
 - 觀眾端：`https://aetheris-finale-votes.web.app/vote`
 - 主辦後台：`https://aetheris-finale-votes.web.app/admin`
 
-後台登入改用 Firebase Authentication 的管理員 Email/Password。觀眾端使用匿名登入，票數由後台即時彙總 `userVotes`，不再使用本機 `data/state.json`。
+後台登入使用 `adminCredentials` 裡的一組帳密。觀眾端與後台連線都使用 Firebase 匿名登入，票數由後台即時彙總 `userVotes`，不再使用本機 `data/state.json`。
 
 ### Render
 
@@ -90,7 +89,8 @@ Render 也可以部署這個 repo，但現在 Render 只會作為靜態頁面伺
 
 ### 重要提醒
 
-- Firebase Realtime Database rules 需要先確認管理員 UID 已寫入 `admins/{uid}: true`，否則後台無法控制投票。
-- Firebase project 的 Realtime Database URL 若不是預設值，必須同步修改 `public/app.js`。
+- `adminCredentials` 是活動後台帳密，請不要使用你其他服務的密碼。
+- 這種單組帳密適合活動現場快速使用；若要更嚴格的資安，建議改回 Firebase Email/Password 或 Cloud Functions。
+- Firebase project 的 Realtime Database URL 若更換，必須同步修改 `public/app.js`。
 - 若使用自己的網域，請確認 HTTPS 已啟用，手機瀏覽器才會穩定允許 localStorage 與即時連線。
 - QR code 目前由公開服務即時產生；若場地網路會擋外部圖片，建議部署後先下載 QR 圖，改成放在 `img/` 內當本機素材。

@@ -106,5 +106,9 @@
     }
   },
   "userVotes": {},
-  "admins": {}
+  "adminCredentials": {
+    "username": "admin",
+    "password": "change-me"
+  },
+  "adminSessions": {}
 }

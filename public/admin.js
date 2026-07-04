@@ -5,7 +5,7 @@ let disconnectEvents = null;
 const loginPanel = document.querySelector("#loginPanel");
 const dashboard = document.querySelector("#dashboard");
 const loginForm = document.querySelector("#loginForm");
-const adminEmail = document.querySelector("#adminEmail");
+const adminUsername = document.querySelector("#adminUsername");
 const password = document.querySelector("#password");
 const loginError = document.querySelector("#loginError");
 const adminStatus = document.querySelector("#adminStatus");
@@ -121,10 +121,15 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.textContent = "";
   try {
-    await signInAdmin(adminEmail.value, password.value);
+    await signInAdmin(adminUsername.value, password.value);
     revealDashboard();
+    if (!disconnectEvents) {
+      disconnectEvents = connectAdminEvents(renderAdmin);
+    }
   } catch (error) {
-    loginError.textContent = error.message || "登入失敗";
+    loginError.textContent = error.code === "PERMISSION_DENIED"
+      ? "帳號或密碼錯誤。"
+      : error.message || "登入失敗";
   }
 });
 
@@ -170,18 +175,18 @@ voteLink.href = publicVoteUrl;
 qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(publicVoteUrl)}`;
 
 auth.onAuthStateChanged(async (user) => {
-  if (!user || user.isAnonymous) {
+  if (!user) {
     revealLogin();
     return;
   }
 
-  const adminSnapshot = await db.ref(`${ADMIN_PATH}/${user.uid}`).get();
-  if (adminSnapshot.val()) {
+  try {
+    await db.ref().get();
     revealDashboard();
     if (!disconnectEvents) {
       disconnectEvents = connectAdminEvents(renderAdmin);
     }
-  } else {
+  } catch {
     revealLogin();
   }
 });
