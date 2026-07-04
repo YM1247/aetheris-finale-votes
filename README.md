@@ -13,7 +13,7 @@ npm start
 - 觀眾端：http://localhost:3000/vote
 - 主辦後台：http://localhost:3000/admin
 
-本機 `npm start` 只負責提供靜態頁面；實際投票資料會寫入 Firebase Realtime Database。
+本機 `npm start` 只負責提供靜態頁面；實際投票資料會寫入 Firebase Realtime Database。舊版本機 `/api/*` 已停用，避免出現另一套後台入口。
 
 ## 功能
 
@@ -57,7 +57,7 @@ firebase deploy --only database,hosting
 
 ### Render
 
-Render 也可以部署這個 repo，但現在 Render 只會作為靜態頁面伺服器；資料仍會走 Firebase Realtime Database。若使用 Firebase Hosting，通常不需要再部署 Render。
+Render 也可以部署這個 repo，但現在 Render 只會作為靜態頁面伺服器；資料仍會走 Firebase Realtime Database。舊版 `/api/*` 在 Node server 會回傳停用狀態，不再接受投票或後台控制。若使用 Firebase Hosting，通常不需要再部署 Render。
 
 ### Render 範例
 
