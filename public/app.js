@@ -272,10 +272,6 @@ async function controlFirebase(action, extra = {}, state) {
     updates[`questions/${currentQuestionId}/voteVersion`] = Number(state.questions[currentQuestionId].voteVersion || 0) + 1;
   } else if (action === "resetAll") {
     updates.userVotes = null;
-    updates.systemState = {
-      currentQuestionId: "q1",
-      status: "waiting"
-    };
     for (const id of QUESTION_IDS) {
       updates[`questions/${id}/voteVersion`] = Number(state.questions[id].voteVersion || 0) + 1;
     }
