@@ -1,7 +1,5 @@
 const OPTION_KEYS = ["optA", "optB", "optC", "optD"];
 const QUESTION_IDS = Array.from({ length: 10 }, (_, index) => `q${index + 1}`);
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "change-me";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtaxfc6KQ7Z5G4lugzOscGlcXC-Q5ECuc",
@@ -21,6 +19,7 @@ if (firebase.analytics && location.hostname !== "localhost") {
 
 const auth = firebase.auth();
 const db = firebase.database();
+const cloudFunctions = firebase.app().functions("asia-southeast1");
 
 function defaultQuestion(index) {
   return {
@@ -218,26 +217,28 @@ async function submitFirebaseVote(questionId, optionId) {
 }
 
 async function signInAdmin(username, password) {
-  const credentials = {
-    username: clampText(username, "", 40),
-    password: clampText(password, "", 80)
-  };
-  if (!credentials.username || !credentials.password) {
-    throw new Error("請輸入後台帳號與密碼。");
+  const email = clampText(username, "", 120);
+  const nextPassword = clampText(password, "", 120);
+  if (!email || !nextPassword) {
+    throw new Error("請輸入管理員 Email 與密碼。");
   }
-  if (credentials.username !== ADMIN_USERNAME || credentials.password !== ADMIN_PASSWORD) {
-    throw new Error("帳號或密碼錯誤。");
+  const credential = await auth.signInWithEmailAndPassword(email, nextPassword);
+  const adminSnapshot = await db.ref(`admins/${credential.user.uid}`).get();
+  if (adminSnapshot.val() !== true) {
+    await auth.signOut();
+    throw new Error("此帳號尚未被加入管理員名單。");
   }
-
-  return ensureAnonymousUser();
+  return credential.user;
 }
 
 function signOutAdmin() {
-  return Promise.resolve();
+  return auth.signOut();
 }
 
 async function updateQuestion(questionId, title, options) {
-  const question = {
+  const updateQuestionFunction = cloudFunctions.httpsCallable("updateQuestion");
+  await updateQuestionFunction({
+    questionId,
     title: clampText(title, `第 ${QUESTION_IDS.indexOf(questionId) + 1} 題：請輸入題目`, 120),
     options: {
       optA: clampText(options.optA, "選項 A", 60),
@@ -245,47 +246,14 @@ async function updateQuestion(questionId, title, options) {
       optC: clampText(options.optC, "選項 C", 60),
       optD: clampText(options.optD, "選項 D", 60)
     }
-  };
-  await db.ref(`questions/${questionId}`).update(question);
+  });
 }
 
 async function controlFirebase(action, extra = {}, state) {
-  const currentQuestionId = state.systemState.currentQuestionId;
-  const currentIndex = QUESTION_IDS.indexOf(currentQuestionId);
-  const updates = {};
-
-  if (action === "start") {
-    updates["systemState/status"] = "active";
-  } else if (action === "lock") {
-    updates["systemState/status"] = "locked";
-  } else if (action === "waiting") {
-    updates["systemState/status"] = "waiting";
-  } else if (action === "next") {
-    updates["systemState/currentQuestionId"] = QUESTION_IDS[Math.min(QUESTION_IDS.length - 1, currentIndex + 1)];
-    updates["systemState/status"] = "waiting";
-  } else if (action === "prev") {
-    updates["systemState/currentQuestionId"] = QUESTION_IDS[Math.max(0, currentIndex - 1)];
-    updates["systemState/status"] = "waiting";
-  } else if (action === "goto" && QUESTION_IDS.includes(extra.questionId)) {
-    updates["systemState/currentQuestionId"] = extra.questionId;
-    updates["systemState/status"] = "waiting";
-  } else if (action === "reset") {
-    for (const uid of Object.keys(state.userVotes || {})) {
-      updates[`userVotes/${uid}/${currentQuestionId}`] = null;
-    }
-    updates[`questions/${currentQuestionId}/voteVersion`] = Number(state.questions[currentQuestionId].voteVersion || 0) + 1;
-  } else if (action === "resetAll") {
-    updates.userVotes = null;
-    updates.systemState = {
-      currentQuestionId: "q1",
-      status: "waiting"
-    };
-    for (const id of QUESTION_IDS) {
-      updates[`questions/${id}/voteVersion`] = Number(state.questions[id].voteVersion || 0) + 1;
-    }
-  } else {
-    throw new Error("未知的控制指令。");
-  }
-
-  await db.ref().update(updates);
+  const controlVoting = cloudFunctions.httpsCallable("controlVoting");
+  await controlVoting({
+    action,
+    ...extra,
+    currentQuestionId: state.systemState.currentQuestionId
+  });
 }

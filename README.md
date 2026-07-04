@@ -1,6 +1,6 @@
 # Aetheris Finale Votes
 
-活動現場用的即時投票系統，包含觀眾端 `/vote` 與主辦後台 `/admin`。目前前端使用 Firebase Anonymous Authentication + Realtime Database 即時同步，可部署到 Firebase Hosting。
+活動現場用的即時投票系統，包含觀眾端 `/vote` 與主辦後台 `/admin`。目前使用 Firebase Authentication、Realtime Database、Cloud Functions 與 Firebase Hosting。
 
 ## 啟動
 
@@ -24,6 +24,7 @@ npm start
 - 後台即時顯示票數與比例
 - 後台可直接編輯題目與選項
 - Firebase Realtime Database 即時同步
+- 後台控制與題目修改走 Cloud Functions，前端不保存管理密碼
 - 後台從 `userVotes` 即時彙總票數，避免多人同時投票時直接競爭票數計數器
 
 Firebase Hosting 會部署 `public/`，因此圖片素材已放在 `public/img/`。
@@ -32,18 +33,28 @@ Firebase Hosting 會部署 `public/`，因此圖片素材已放在 `public/img/`
 
 ### Firebase Hosting + Realtime Database
 
-此版本已可用 Firebase Hosting + Realtime Database 部署，不需要 Render 常駐 server。
+此版本已可用 Firebase Hosting + Realtime Database + Cloud Functions 部署，不需要 Render 常駐 server。
 
 第一次設定：
 
-1. 到 Firebase Console 啟用 Authentication 的 `Anonymous` 登入方式。
+1. 到 Firebase Console 啟用 Authentication 的 `Anonymous` 與 `Email/Password` 登入方式。
 2. 啟用 Realtime Database。此專案目前使用 `https://aetheris-finale-votes-default-rtdb.asia-southeast1.firebasedatabase.app/`。
 3. 在 Realtime Database Console 匯入 `database.seed.json` 作為初始資料。
-4. 後台帳密目前設定在 `public/app.js` 的 `ADMIN_USERNAME` / `ADMIN_PASSWORD`，部署前請改成活動用帳密。
-5. 部署 rules 與 hosting：
+4. 在 Authentication 建立後台管理員 Email/Password 帳號。
+5. 複製該管理員 UID，在 Realtime Database 寫入：
+
+```json
+{
+  "admins": {
+    "你的管理員 UID": true
+  }
+}
+```
+
+6. 部署 rules、functions 與 hosting：
 
 ```bash
-firebase deploy --only database,hosting
+firebase deploy --only database,functions,hosting
 ```
 
 部署完成後：
@@ -51,7 +62,7 @@ firebase deploy --only database,hosting
 - 觀眾端：`https://aetheris-finale-votes.web.app/vote`
 - 主辦後台：`https://aetheris-finale-votes.web.app/admin`
 
-後台登入使用 `public/app.js` 裡的一組帳密。觀眾端與後台連線都使用 Firebase 匿名登入，票數由後台即時彙總 `userVotes`，不再使用本機 `data/state.json`。
+後台登入使用 Firebase Authentication 的管理員 Email/Password。管理員權限由 Realtime Database 的 `admins/{uid}: true` 判斷。觀眾端使用 Firebase 匿名登入，票數由後台即時彙總 `userVotes`，不再使用本機 `data/state.json`。
 
 ### Render
 
@@ -79,8 +90,9 @@ Render 也可以部署這個 repo，但現在 Render 只會作為靜態頁面伺
 
 ### 重要提醒
 
-- `ADMIN_USERNAME` / `ADMIN_PASSWORD` 是活動後台帳密，請不要使用你其他服務的密碼。
-- 這種單組帳密適合活動現場快速使用；若要更嚴格的資安，建議改回 Firebase Email/Password 或 Cloud Functions。
+- Cloud Functions 通常需要 Firebase Blaze 方案。
+- 後台帳密不在前端程式碼裡；請在 Firebase Authentication 管理。
+- 管理員 UID 必須寫入 `admins/{uid}: true`，否則登入後仍無管理權限。
 - Firebase project 的 Realtime Database URL 若更換，必須同步修改 `public/app.js`。
 - 若使用自己的網域，請確認 HTTPS 已啟用，手機瀏覽器才會穩定允許 localStorage 與即時連線。
 - QR code 目前由公開服務即時產生；若場地網路會擋外部圖片，建議部署後先下載 QR 圖，改成放在 `img/` 內當本機素材。

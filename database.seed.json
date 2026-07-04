@@ -105,5 +105,6 @@
       "voteVersion": 0
     }
   },
-  "userVotes": {}
+  "userVotes": {},
+  "admins": {}
 }

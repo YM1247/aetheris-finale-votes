@@ -7,7 +7,7 @@ const ADMIN_SESSION_KEY = "aetheris-admin-session-active";
 const loginPanel = document.querySelector("#loginPanel");
 const dashboard = document.querySelector("#dashboard");
 const loginForm = document.querySelector("#loginForm");
-const adminUsername = document.querySelector("#adminUsername");
+const adminEmail = document.querySelector("#adminEmail");
 const password = document.querySelector("#password");
 const loginError = document.querySelector("#loginError");
 const adminStatus = document.querySelector("#adminStatus");
@@ -130,7 +130,7 @@ loginForm.addEventListener("submit", async (event) => {
   loginError.textContent = "";
   isLoggingIn = true;
   try {
-    await signInAdmin(adminUsername.value, password.value);
+    await signInAdmin(adminEmail.value, password.value);
     revealDashboard();
     if (!disconnectEvents) {
       disconnectEvents = connectAdminEvents(renderAdmin);
@@ -197,7 +197,10 @@ auth.onAuthStateChanged(async (user) => {
   }
 
   try {
-    await ensureAnonymousUser();
+    const adminSnapshot = await db.ref(`admins/${user.uid}`).get();
+    if (adminSnapshot.val() !== true) {
+      throw new Error("此帳號尚未被加入管理員名單。");
+    }
     revealDashboard();
     if (!disconnectEvents) {
       disconnectEvents = connectAdminEvents(renderAdmin);
