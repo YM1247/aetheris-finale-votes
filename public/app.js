@@ -216,23 +216,20 @@ async function submitFirebaseVote(questionId, optionId) {
   };
 }
 
-async function signInAdmin(username, password) {
-  const email = clampText(username, "", 120);
-  const nextPassword = clampText(password, "", 120);
-  if (!email || !nextPassword) {
-    throw new Error("請輸入管理員 Email 與密碼。");
+async function signInAdmin(token) {
+  const nextToken = clampText(token, "", 200);
+  if (!nextToken) {
+    throw new Error("請輸入後台 token。");
   }
-  const credential = await auth.signInWithEmailAndPassword(email, nextPassword);
-  const adminSnapshot = await db.ref(`admins/${credential.user.uid}`).get();
-  if (adminSnapshot.val() !== true) {
-    await auth.signOut();
-    throw new Error("此帳號尚未被加入管理員名單。");
-  }
-  return credential.user;
+  const user = await ensureAnonymousUser();
+  const loginWithAdminToken = cloudFunctions.httpsCallable("loginWithAdminToken");
+  await loginWithAdminToken({ token: nextToken });
+  return user;
 }
 
 function signOutAdmin() {
-  return auth.signOut();
+  const logoutAdmin = cloudFunctions.httpsCallable("logoutAdmin");
+  return logoutAdmin().catch(() => {});
 }
 
 async function updateQuestion(questionId, title, options) {

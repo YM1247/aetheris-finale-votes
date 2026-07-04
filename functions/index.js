@@ -1,24 +1,28 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 
 const db = admin.database();
 const region = "asia-southeast1";
+const adminToken = defineSecret("ADMIN_TOKEN");
 const optionKeys = ["optA", "optB", "optC", "optD"];
 const questionIds = Array.from({ length: 10 }, (_, index) => `q${index + 1}`);
 
-function requireAdmin(request) {
+async function requireAdmin(request) {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "請先登入後台。");
   }
-  return db.ref(`admins/${uid}`).get().then((snapshot) => {
-    if (snapshot.val() !== true) {
-      throw new HttpsError("permission-denied", "此帳號沒有管理員權限。");
-    }
-    return uid;
-  });
+  const [adminSnapshot, sessionSnapshot] = await Promise.all([
+    db.ref(`admins/${uid}`).get(),
+    db.ref(`adminSessions/${uid}`).get()
+  ]);
+  if (adminSnapshot.val() !== true && sessionSnapshot.val() !== true) {
+    throw new HttpsError("permission-denied", "此帳號沒有管理員權限。");
+  }
+  return uid;
 }
 
 function assertQuestionId(questionId) {
@@ -52,6 +56,30 @@ exports.updateQuestion = onCall({ region }, async (request) => {
   };
 
   await db.ref(`questions/${questionId}`).update(update);
+  return { ok: true };
+});
+
+exports.loginWithAdminToken = onCall({ region, secrets: [adminToken] }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "請先建立登入狀態。");
+  }
+
+  const token = typeof request.data?.token === "string" ? request.data.token.trim() : "";
+  const expectedToken = adminToken.value();
+  if (!expectedToken || token !== expectedToken) {
+    throw new HttpsError("permission-denied", "後台 token 錯誤。");
+  }
+
+  await db.ref(`adminSessions/${uid}`).set(true);
+  return { ok: true };
+});
+
+exports.logoutAdmin = onCall({ region }, async (request) => {
+  const uid = request.auth?.uid;
+  if (uid) {
+    await db.ref(`adminSessions/${uid}`).remove();
+  }
   return { ok: true };
 });
 
