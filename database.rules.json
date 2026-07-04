@@ -55,11 +55,8 @@
         "token": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
         },
-        "signedInAt": {
-          ".validate": "newData.isNumber()"
-        },
         "$other": {
-          ".validate": "$other === 'token' || $other === 'signedInAt'"
+          ".validate": "$other === 'token'"
         }
       }
     }

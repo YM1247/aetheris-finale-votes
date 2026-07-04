@@ -222,8 +222,7 @@ async function signInAdmin(token) {
   }
   const user = await ensureAnonymousUser();
   await db.ref(`adminSessions/${user.uid}`).set({
-    token: nextToken,
-    signedInAt: firebase.database.ServerValue.TIMESTAMP
+    token: nextToken
   });
   return user;
 }

@@ -66,16 +66,15 @@ Render 也可以部署這個 repo，但現在 Render 只會作為靜態頁面伺
 1. 將專案推到 GitHub。
 2. 到 Render Dashboard 點 `New` -> `Blueprint`。
 3. 選擇這個 repo，Render 會讀取 `render.yaml`。
-4. 填入 `ADMIN_PASSWORD`。
-5. 套用 Blueprint 後等待部署完成。
-6. 部署完成後，開啟 `https://你的網域/vote` 給觀眾掃 QR code，`https://你的網域/admin` 給主辦操作。
+4. 套用 Blueprint 後等待部署完成。
+5. 部署完成後，開啟 `https://你的網域/vote` 給觀眾掃 QR code，`https://你的網域/admin` 給主辦操作。
 
 也可以不用 Blueprint，手動建立 `Web Service`：
 
 - Runtime：`Node`
 - Build Command：`npm install`
 - Start Command：`npm start`
-- Environment Variables：可留空
+- Environment Variables：可留空，後台 token 由 Firebase Realtime Database 的 `adminToken` 控制
 - Region：建議選 `Singapore`
 - Disk：不需要
 
@@ -83,6 +82,7 @@ Render 也可以部署這個 repo，但現在 Render 只會作為靜態頁面伺
 
 - 後台 token 不在前端程式碼裡；請在 Realtime Database Console 修改 `adminToken`。
 - `adminToken` 不可被前端讀取，但具有 token 的使用者可以建立自己的 admin session。
+- 若後台登入出現 `PERMISSION_DENIED`，請確認 Realtime Database 根目錄有 `adminToken` 字串、輸入內容與它完全一致，並已執行 `firebase deploy --only database,hosting` 部署最新 rules。
 - Firebase project 的 Realtime Database URL 若更換，必須同步修改 `public/app.js`。
 - 若使用自己的網域，請確認 HTTPS 已啟用，手機瀏覽器才會穩定允許 localStorage 與即時連線。
 - QR code 目前由公開服務即時產生；若場地網路會擋外部圖片，建議部署後先下載 QR 圖，改成放在 `img/` 內當本機素材。

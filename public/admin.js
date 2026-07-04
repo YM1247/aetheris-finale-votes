@@ -31,6 +31,14 @@ const editFields = {
   optD: document.querySelector("#editOptD")
 };
 
+function adminLoginErrorMessage(error) {
+  const message = String(error?.message || "");
+  if (error?.code === "PERMISSION_DENIED" || /permission.?denied/i.test(message)) {
+    return "Firebase 拒絕登入：請確認 Realtime Database 根目錄 adminToken 已設定、輸入 token 完全一致，並已重新部署 database rules。";
+  }
+  return message || "登入失敗";
+}
+
 function showAdminToast(message) {
   adminToast.textContent = message;
   adminToast.classList.add("visible");
@@ -139,7 +147,7 @@ loginForm.addEventListener("submit", async (event) => {
       disconnectEvents = connectAdminEvents(renderAdmin);
     }
   } catch (error) {
-    loginError.textContent = error.message || "登入失敗";
+    loginError.textContent = adminLoginErrorMessage(error);
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
   } finally {
     isLoggingIn = false;
