@@ -1,6 +1,7 @@
 const OPTION_KEYS = ["optA", "optB", "optC", "optD"];
 const QUESTION_IDS = Array.from({ length: 10 }, (_, index) => `q${index + 1}`);
-const ADMIN_SESSION_PATH = "adminSessions";
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "change-me";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtaxfc6KQ7Z5G4lugzOscGlcXC-Q5ECuc",
@@ -148,14 +149,44 @@ function connectVoterEvents(uid, onState) {
 }
 
 function connectAdminEvents(onState) {
-  const ref = db.ref();
-  ref.on("value", (snapshot) => {
+  let systemState = null;
+  let questions = null;
+  let userVotes = null;
+
+  function emit() {
+    onState(normalizeState({
+      systemState,
+      questions,
+      userVotes
+    }));
+  }
+
+  const systemRef = db.ref("systemState");
+  const questionsRef = db.ref("questions");
+  const votesRef = db.ref("userVotes");
+  const onError = () => document.body.classList.add("is-reconnecting");
+
+  systemRef.on("value", (snapshot) => {
     document.body.classList.remove("is-reconnecting");
-    onState(normalizeState(snapshot.val()));
-  }, () => {
-    document.body.classList.add("is-reconnecting");
-  });
-  return () => ref.off();
+    systemState = snapshot.val();
+    emit();
+  }, onError);
+  questionsRef.on("value", (snapshot) => {
+    document.body.classList.remove("is-reconnecting");
+    questions = snapshot.val();
+    emit();
+  }, onError);
+  votesRef.on("value", (snapshot) => {
+    document.body.classList.remove("is-reconnecting");
+    userVotes = snapshot.val();
+    emit();
+  }, onError);
+
+  return () => {
+    systemRef.off();
+    questionsRef.off();
+    votesRef.off();
+  };
 }
 
 function waitForAuth() {
@@ -187,25 +218,22 @@ async function submitFirebaseVote(questionId, optionId) {
 }
 
 async function signInAdmin(username, password) {
-  const user = await ensureAnonymousUser();
   const credentials = {
     username: clampText(username, "", 40),
-    password: clampText(password, "", 80),
-    signedInAt: firebase.database.ServerValue.TIMESTAMP
+    password: clampText(password, "", 80)
   };
   if (!credentials.username || !credentials.password) {
     throw new Error("請輸入後台帳號與密碼。");
   }
+  if (credentials.username !== ADMIN_USERNAME || credentials.password !== ADMIN_PASSWORD) {
+    throw new Error("帳號或密碼錯誤。");
+  }
 
-  await db.ref(`${ADMIN_SESSION_PATH}/${user.uid}`).set(credentials);
-  await db.ref().get();
-  return user;
+  return ensureAnonymousUser();
 }
 
 function signOutAdmin() {
-  const user = auth.currentUser;
-  if (!user) return Promise.resolve();
-  return db.ref(`${ADMIN_SESSION_PATH}/${user.uid}`).remove();
+  return Promise.resolve();
 }
 
 async function updateQuestion(questionId, title, options) {

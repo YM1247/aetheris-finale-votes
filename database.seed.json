@@ -105,10 +105,5 @@
       "voteVersion": 0
     }
   },
-  "userVotes": {},
-  "adminCredentials": {
-    "username": "admin",
-    "password": "change-me"
-  },
-  "adminSessions": {}
+  "userVotes": {}
 }

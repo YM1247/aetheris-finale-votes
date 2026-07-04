@@ -39,17 +39,7 @@ Firebase Hosting 會部署 `public/`，因此圖片素材已放在 `public/img/`
 1. 到 Firebase Console 啟用 Authentication 的 `Anonymous` 登入方式。
 2. 啟用 Realtime Database。此專案目前使用 `https://aetheris-finale-votes-default-rtdb.asia-southeast1.firebasedatabase.app/`。
 3. 在 Realtime Database Console 匯入 `database.seed.json` 作為初始資料。
-4. 在 Realtime Database Console 修改：
-
-```json
-{
-  "adminCredentials": {
-    "username": "你的後台帳號",
-    "password": "你的後台密碼"
-  }
-}
-```
-
+4. 後台帳密目前設定在 `public/app.js` 的 `ADMIN_USERNAME` / `ADMIN_PASSWORD`，部署前請改成活動用帳密。
 5. 部署 rules 與 hosting：
 
 ```bash
@@ -61,7 +51,7 @@ firebase deploy --only database,hosting
 - 觀眾端：`https://aetheris-finale-votes.web.app/vote`
 - 主辦後台：`https://aetheris-finale-votes.web.app/admin`
 
-後台登入使用 `adminCredentials` 裡的一組帳密。觀眾端與後台連線都使用 Firebase 匿名登入，票數由後台即時彙總 `userVotes`，不再使用本機 `data/state.json`。
+後台登入使用 `public/app.js` 裡的一組帳密。觀眾端與後台連線都使用 Firebase 匿名登入，票數由後台即時彙總 `userVotes`，不再使用本機 `data/state.json`。
 
 ### Render
 
@@ -89,7 +79,7 @@ Render 也可以部署這個 repo，但現在 Render 只會作為靜態頁面伺
 
 ### 重要提醒
 
-- `adminCredentials` 是活動後台帳密，請不要使用你其他服務的密碼。
+- `ADMIN_USERNAME` / `ADMIN_PASSWORD` 是活動後台帳密，請不要使用你其他服務的密碼。
 - 這種單組帳密適合活動現場快速使用；若要更嚴格的資安，建議改回 Firebase Email/Password 或 Cloud Functions。
 - Firebase project 的 Realtime Database URL 若更換，必須同步修改 `public/app.js`。
 - 若使用自己的網域，請確認 HTTPS 已啟用，手機瀏覽器才會穩定允許 localStorage 與即時連線。

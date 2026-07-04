@@ -136,9 +136,7 @@ loginForm.addEventListener("submit", async (event) => {
       disconnectEvents = connectAdminEvents(renderAdmin);
     }
   } catch (error) {
-    loginError.textContent = error.code === "PERMISSION_DENIED"
-      ? "帳號或密碼錯誤，或 Firebase Database Rules 尚未部署。"
-      : error.message || "登入失敗";
+    loginError.textContent = error.message || "登入失敗";
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
   } finally {
     isLoggingIn = false;
@@ -199,7 +197,7 @@ auth.onAuthStateChanged(async (user) => {
   }
 
   try {
-    await db.ref().get();
+    await ensureAnonymousUser();
     revealDashboard();
     if (!disconnectEvents) {
       disconnectEvents = connectAdminEvents(renderAdmin);
