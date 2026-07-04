@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aetheris 即時投票</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="vote-shell">
+    <img class="scene-mark scene-mark-left" src="/img/S__671751-removebg-preview.png" alt="">
+    <img class="scene-mark scene-mark-right" src="/img/S__671751-removebg-preview.png" alt="">
+    <main class="vote-screen">
+      <section class="vote-topbar">
+        <div class="brand-block">
+          <img class="brand-logo" src="/img/logo-transparent.png" alt="Aetheris Finale">
+          <p class="eyebrow">Aetheris Finale</p>
+          <h1>即時投票</h1>
+        </div>
+        <span id="statusPill" class="pill neutral">等待開放</span>
+      </section>
+
+      <section class="question-block">
+        <p id="questionNumber" class="question-number">第 1 / 10 題</p>
+        <h2 id="questionTitle">等待主持人開放投票</h2>
+        <p id="helperText" class="helper-text">投票開始後，點選選項即可送出；結束前可以更改或取消。</p>
+      </section>
+
+      <section id="options" class="option-grid" aria-live="polite"></section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="/app.js"></script>
+    <script src="/vote.js"></script>
+  </body>
+</html>

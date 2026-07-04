@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aetheris 投票後台</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="admin-shell">
+    <main class="admin-screen">
+      <section id="loginPanel" class="login-panel">
+        <img class="login-logo" src="/img/logo-transparent.png" alt="Aetheris Finale">
+        <p class="eyebrow">Aetheris Finale</p>
+        <h1>主辦後台</h1>
+        <form id="loginForm" class="login-form">
+          <input id="password" type="password" autocomplete="current-password" placeholder="後台密碼" aria-label="後台密碼">
+          <button type="submit">登入</button>
+        </form>
+        <p id="loginError" class="error-text"></p>
+      </section>
+
+      <section id="dashboard" class="dashboard hidden">
+        <header class="admin-header">
+          <div class="brand-block admin-brand">
+            <img class="brand-logo" src="/img/logo-transparent.png" alt="Aetheris Finale">
+            <p class="eyebrow">Live Control</p>
+            <h1>投票控制台</h1>
+          </div>
+          <div class="header-actions">
+            <span id="adminStatus" class="pill neutral">等待開放</span>
+            <a id="voteLink" class="ghost-link" href="/vote" target="_blank">開啟前台</a>
+          </div>
+        </header>
+
+        <section class="control-band">
+          <div class="question-picker" id="questionTabs"></div>
+          <div class="control-buttons">
+            <button data-action="prev" class="icon-button" title="上一題">‹</button>
+            <button data-action="start" class="success">開始投票</button>
+            <button data-action="lock" class="danger">鎖定投票</button>
+            <button data-action="waiting">等待</button>
+            <button data-action="reset">重置本題</button>
+            <button data-action="next" class="icon-button" title="下一題">›</button>
+          </div>
+        </section>
+
+        <section class="admin-grid">
+          <div class="results-panel">
+            <div class="panel-heading">
+              <div>
+                <p id="adminQuestionNumber" class="question-number">第 1 / 10 題</p>
+                <h2 id="adminQuestionTitle">題目</h2>
+              </div>
+              <strong id="totalVotes" class="total-votes">0 票</strong>
+            </div>
+            <div id="bars" class="bars"></div>
+          </div>
+
+          <aside class="side-panel">
+            <div class="qr-panel">
+              <p class="section-label">觀眾入口</p>
+              <img id="qrImage" alt="投票頁 QR Code">
+              <code id="voteUrl"></code>
+            </div>
+
+            <form id="questionForm" class="editor-form">
+              <p class="section-label">題目設定</p>
+              <label>
+                題目
+                <input id="editTitle" maxlength="120">
+              </label>
+              <label>
+                A
+                <input id="editOptA" maxlength="60">
+              </label>
+              <label>
+                B
+                <input id="editOptB" maxlength="60">
+              </label>
+              <label>
+                C
+                <input id="editOptC" maxlength="60">
+              </label>
+              <label>
+                D
+                <input id="editOptD" maxlength="60">
+              </label>
+              <button type="submit">儲存題目</button>
+            </form>
+
+            <button id="resetAll" class="danger outline">重置全部投票</button>
+          </aside>
+        </section>
+      </section>
+    </main>
+
+    <div id="adminToast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="/app.js"></script>
+    <script src="/admin.js"></script>
+  </body>
+</html>
