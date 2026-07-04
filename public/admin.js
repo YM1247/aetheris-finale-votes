@@ -127,6 +127,10 @@ async function control(action, extra = {}) {
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.textContent = "";
+  if (!adminToken) {
+    loginError.textContent = "後台頁面版本不一致，請重新整理頁面。";
+    return;
+  }
   isLoggingIn = true;
   try {
     await signInAdmin(adminToken.value);
