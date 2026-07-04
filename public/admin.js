@@ -1,6 +1,7 @@
 let currentState = null;
 let syncingEditor = false;
 let disconnectEvents = null;
+let isLoggingIn = false;
 const ADMIN_SESSION_KEY = "aetheris-admin-session-active";
 
 const loginPanel = document.querySelector("#loginPanel");
@@ -127,6 +128,7 @@ async function control(action, extra = {}) {
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.textContent = "";
+  isLoggingIn = true;
   try {
     await signInAdmin(adminUsername.value, password.value);
     revealDashboard();
@@ -135,8 +137,11 @@ loginForm.addEventListener("submit", async (event) => {
     }
   } catch (error) {
     loginError.textContent = error.code === "PERMISSION_DENIED"
-      ? "帳號或密碼錯誤。"
+      ? "帳號或密碼錯誤，或 Firebase Database Rules 尚未部署。"
       : error.message || "登入失敗";
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  } finally {
+    isLoggingIn = false;
   }
 });
 
@@ -183,6 +188,8 @@ voteLink.href = publicVoteUrl;
 qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(publicVoteUrl)}`;
 
 auth.onAuthStateChanged(async (user) => {
+  if (isLoggingIn) return;
+
   if (!user || !hasActiveAdminSession()) {
     if (user) {
       await signOutAdmin().catch(() => {});
