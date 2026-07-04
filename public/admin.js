@@ -197,7 +197,7 @@ auth.onAuthStateChanged(async (user) => {
 
   try {
     const sessionSnapshot = await db.ref(`adminSessions/${user.uid}`).get();
-    if (sessionSnapshot.val() !== true) {
+    if (!sessionSnapshot.val()) {
       throw new Error("後台 session 已失效。");
     }
     revealDashboard();

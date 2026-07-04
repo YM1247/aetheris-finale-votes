@@ -4,7 +4,7 @@
     ".write": false,
     "systemState": {
       ".read": "auth != null",
-      ".write": false,
+      ".write": "auth != null && root.child('adminSessions').child(auth.uid).child('token').val() === root.child('adminToken').val()",
       "currentQuestionId": {
         ".validate": "newData.val() === 'q1' || newData.val() === 'q2' || newData.val() === 'q3' || newData.val() === 'q4' || newData.val() === 'q5' || newData.val() === 'q6' || newData.val() === 'q7' || newData.val() === 'q8' || newData.val() === 'q9' || newData.val() === 'q10'"
       },
@@ -15,7 +15,7 @@
     "questions": {
       ".read": "auth != null",
       "$qid": {
-        ".write": false,
+        ".write": "auth != null && root.child('adminSessions').child(auth.uid).child('token').val() === root.child('adminToken').val()",
         ".validate": "$qid === 'q1' || $qid === 'q2' || $qid === 'q3' || $qid === 'q4' || $qid === 'q5' || $qid === 'q6' || $qid === 'q7' || $qid === 'q8' || $qid === 'q9' || $qid === 'q10'",
         "title": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
@@ -34,32 +34,33 @@
       }
     },
     "userVotes": {
-      ".read": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('adminSessions').child(auth.uid).val() === true)",
-      ".write": false,
+      ".read": "auth != null && root.child('adminSessions').child(auth.uid).child('token').val() === root.child('adminToken').val()",
+      ".write": "auth != null && root.child('adminSessions').child(auth.uid).child('token').val() === root.child('adminToken').val()",
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true || root.child('adminSessions').child(auth.uid).val() === true)",
+        ".read": "auth != null && (auth.uid === $uid || root.child('adminSessions').child(auth.uid).child('token').val() === root.child('adminToken').val())",
         "$qid": {
-          ".write": "auth != null && $uid === auth.uid && root.child('systemState/status').val() === 'active' && root.child('systemState/currentQuestionId').val() === $qid",
+          ".write": "auth != null && (root.child('adminSessions').child(auth.uid).child('token').val() === root.child('adminToken').val() || ($uid === auth.uid && root.child('systemState/status').val() === 'active' && root.child('systemState/currentQuestionId').val() === $qid))",
           ".validate": "newData.val() === 'optA' || newData.val() === 'optB' || newData.val() === 'optC' || newData.val() === 'optD'"
         }
       }
     },
-    "admins": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": false,
-        ".validate": "newData.val() === true"
-      }
-    },
-    "adminCredentials": {
+    "adminToken": {
       ".read": false,
       ".write": false
     },
     "adminSessions": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": false,
-        ".validate": "newData.val() === true"
+        ".write": "auth != null && auth.uid === $uid && (newData.val() === null || newData.child('token').val() === root.child('adminToken').val())",
+        "token": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+        },
+        "signedInAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": "$other === 'token' || $other === 'signedInAt'"
+        }
       }
     }
   }

@@ -19,7 +19,6 @@ if (firebase.analytics && location.hostname !== "localhost") {
 
 const auth = firebase.auth();
 const db = firebase.database();
-const cloudFunctions = firebase.app().functions("asia-southeast1");
 
 function defaultQuestion(index) {
   return {
@@ -222,20 +221,21 @@ async function signInAdmin(token) {
     throw new Error("請輸入後台 token。");
   }
   const user = await ensureAnonymousUser();
-  const loginWithAdminToken = cloudFunctions.httpsCallable("loginWithAdminToken");
-  await loginWithAdminToken({ token: nextToken });
+  await db.ref(`adminSessions/${user.uid}`).set({
+    token: nextToken,
+    signedInAt: firebase.database.ServerValue.TIMESTAMP
+  });
   return user;
 }
 
 function signOutAdmin() {
-  const logoutAdmin = cloudFunctions.httpsCallable("logoutAdmin");
-  return logoutAdmin().catch(() => {});
+  const user = auth.currentUser;
+  if (!user) return Promise.resolve();
+  return db.ref(`adminSessions/${user.uid}`).remove().catch(() => {});
 }
 
 async function updateQuestion(questionId, title, options) {
-  const updateQuestionFunction = cloudFunctions.httpsCallable("updateQuestion");
-  await updateQuestionFunction({
-    questionId,
+  await db.ref(`questions/${questionId}`).update({
     title: clampText(title, `第 ${QUESTION_IDS.indexOf(questionId) + 1} 題：請輸入題目`, 120),
     options: {
       optA: clampText(options.optA, "選項 A", 60),
@@ -247,10 +247,42 @@ async function updateQuestion(questionId, title, options) {
 }
 
 async function controlFirebase(action, extra = {}, state) {
-  const controlVoting = cloudFunctions.httpsCallable("controlVoting");
-  await controlVoting({
-    action,
-    ...extra,
-    currentQuestionId: state.systemState.currentQuestionId
-  });
+  const currentQuestionId = state.systemState.currentQuestionId;
+  const currentIndex = QUESTION_IDS.indexOf(currentQuestionId);
+  const updates = {};
+
+  if (action === "start") {
+    updates["systemState/status"] = "active";
+  } else if (action === "lock") {
+    updates["systemState/status"] = "locked";
+  } else if (action === "waiting") {
+    updates["systemState/status"] = "waiting";
+  } else if (action === "next") {
+    updates["systemState/currentQuestionId"] = QUESTION_IDS[Math.min(QUESTION_IDS.length - 1, currentIndex + 1)];
+    updates["systemState/status"] = "waiting";
+  } else if (action === "prev") {
+    updates["systemState/currentQuestionId"] = QUESTION_IDS[Math.max(0, currentIndex - 1)];
+    updates["systemState/status"] = "waiting";
+  } else if (action === "goto" && QUESTION_IDS.includes(extra.questionId)) {
+    updates["systemState/currentQuestionId"] = extra.questionId;
+    updates["systemState/status"] = "waiting";
+  } else if (action === "reset") {
+    for (const uid of Object.keys(state.userVotes || {})) {
+      updates[`userVotes/${uid}/${currentQuestionId}`] = null;
+    }
+    updates[`questions/${currentQuestionId}/voteVersion`] = Number(state.questions[currentQuestionId].voteVersion || 0) + 1;
+  } else if (action === "resetAll") {
+    updates.userVotes = null;
+    updates.systemState = {
+      currentQuestionId: "q1",
+      status: "waiting"
+    };
+    for (const id of QUESTION_IDS) {
+      updates[`questions/${id}/voteVersion`] = Number(state.questions[id].voteVersion || 0) + 1;
+    }
+  } else {
+    throw new Error("未知的控制指令。");
+  }
+
+  await db.ref().update(updates);
 }

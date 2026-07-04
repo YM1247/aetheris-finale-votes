@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "deploy:firebase": "firebase deploy --only database,functions,hosting"
+    "deploy:firebase": "firebase deploy --only database,hosting"
   },
   "engines": {
     "node": ">=18"
