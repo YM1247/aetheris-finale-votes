@@ -1,0 +1,110 @@
+{
+  "systemState": {
+    "currentQuestionId": "q1",
+    "status": "waiting"
+  },
+  "questions": {
+    "q1": {
+      "title": "第 1 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q2": {
+      "title": "第 2 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q3": {
+      "title": "第 3 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q4": {
+      "title": "第 4 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q5": {
+      "title": "第 5 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q6": {
+      "title": "第 6 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q7": {
+      "title": "第 7 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q8": {
+      "title": "第 8 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q9": {
+      "title": "第 9 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    },
+    "q10": {
+      "title": "第 10 題：請輸入題目",
+      "options": {
+        "optA": "選項 A",
+        "optB": "選項 B",
+        "optC": "選項 C",
+        "optD": "選項 D"
+      },
+      "voteVersion": 0
+    }
+  },
+  "userVotes": {},
+  "admins": {}
+}

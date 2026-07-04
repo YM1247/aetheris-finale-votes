@@ -1,10 +1,11 @@
-let adminToken = sessionStorage.getItem("aetheris-admin-token") || "";
 let currentState = null;
 let syncingEditor = false;
+let disconnectEvents = null;
 
 const loginPanel = document.querySelector("#loginPanel");
 const dashboard = document.querySelector("#dashboard");
 const loginForm = document.querySelector("#loginForm");
+const adminEmail = document.querySelector("#adminEmail");
 const password = document.querySelector("#password");
 const loginError = document.querySelector("#loginError");
 const adminStatus = document.querySelector("#adminStatus");
@@ -18,6 +19,7 @@ const voteLink = document.querySelector("#voteLink");
 const qrImage = document.querySelector("#qrImage");
 const questionForm = document.querySelector("#questionForm");
 const resetAll = document.querySelector("#resetAll");
+const logoutButton = document.querySelector("#logoutButton");
 const adminToast = document.querySelector("#adminToast");
 
 const editFields = {
@@ -38,6 +40,15 @@ function showAdminToast(message) {
 function revealDashboard() {
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
+}
+
+function revealLogin() {
+  dashboard.classList.add("hidden");
+  loginPanel.classList.remove("hidden");
+  if (disconnectEvents) {
+    disconnectEvents();
+    disconnectEvents = null;
+  }
 }
 
 function renderTabs(currentQuestionId) {
@@ -68,7 +79,7 @@ function renderAdmin(state) {
   const { currentQuestionId, status } = state.systemState;
   const question = state.questions[currentQuestionId];
   const questionIndex = QUESTION_IDS.indexOf(currentQuestionId) + 1;
-  const counts = question.voteCounts;
+  const counts = countVotesForQuestion(state.userVotes, currentQuestionId);
   const total = OPTION_KEYS.reduce((sum, key) => sum + Number(counts[key] || 0), 0);
 
   adminStatus.textContent = statusLabel(status);
@@ -97,11 +108,12 @@ function renderAdmin(state) {
 }
 
 async function control(action, extra = {}) {
+  if (!currentState) return;
   try {
-    await postJson("/api/admin/control", { action, ...extra }, adminToken);
+    await controlFirebase(action, extra, currentState);
     showAdminToast("控制已更新");
   } catch (error) {
-    showAdminToast(error.message);
+    showAdminToast(error.message || "控制失敗");
   }
 }
 
@@ -109,12 +121,10 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.textContent = "";
   try {
-    await postJson("/api/admin/login", { password: password.value });
-    adminToken = password.value;
-    sessionStorage.setItem("aetheris-admin-token", adminToken);
+    await signInAdmin(adminEmail.value, password.value);
     revealDashboard();
   } catch (error) {
-    loginError.textContent = error.message;
+    loginError.textContent = error.message || "登入失敗";
   }
 });
 
@@ -131,19 +141,15 @@ questionForm.addEventListener("submit", async (event) => {
   if (!currentState || syncingEditor) return;
   const questionId = currentState.systemState.currentQuestionId;
   try {
-    await postJson("/api/admin/question", {
-      questionId,
-      title: editFields.title.value,
-      options: {
-        optA: editFields.optA.value,
-        optB: editFields.optB.value,
-        optC: editFields.optC.value,
-        optD: editFields.optD.value
-      }
-    }, adminToken);
+    await updateQuestion(questionId, editFields.title.value, {
+      optA: editFields.optA.value,
+      optB: editFields.optB.value,
+      optC: editFields.optC.value,
+      optD: editFields.optD.value
+    });
     showAdminToast("題目已儲存");
   } catch (error) {
-    showAdminToast(error.message);
+    showAdminToast(error.message || "儲存失敗");
   }
 });
 
@@ -153,10 +159,29 @@ resetAll.addEventListener("click", () => {
   }
 });
 
+logoutButton.addEventListener("click", async () => {
+  await signOutAdmin();
+  revealLogin();
+});
+
 const publicVoteUrl = `${location.origin}/vote`;
 voteUrl.textContent = publicVoteUrl;
 voteLink.href = publicVoteUrl;
 qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(publicVoteUrl)}`;
 
-if (adminToken) revealDashboard();
-connectEvents(renderAdmin);
+auth.onAuthStateChanged(async (user) => {
+  if (!user || user.isAnonymous) {
+    revealLogin();
+    return;
+  }
+
+  const adminSnapshot = await db.ref(`${ADMIN_PATH}/${user.uid}`).get();
+  if (adminSnapshot.val()) {
+    revealDashboard();
+    if (!disconnectEvents) {
+      disconnectEvents = connectAdminEvents(renderAdmin);
+    }
+  } else {
+    revealLogin();
+  }
+});

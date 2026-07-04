@@ -1,6 +1,6 @@
-const voterId = createVoterId();
 const selectedByQuestion = JSON.parse(localStorage.getItem("aetheris-selected-votes") || "{}");
 let currentState = null;
+let currentUser = null;
 let pendingOption = null;
 
 const statusPill = document.querySelector("#statusPill");
@@ -11,14 +11,13 @@ const options = document.querySelector("#options");
 const toast = document.querySelector("#toast");
 
 function selectedFor(questionId, question) {
+  if (currentUser && currentState?.userVotes?.[currentUser.uid]?.[questionId]) {
+    return currentState.userVotes[currentUser.uid][questionId];
+  }
+
   const stored = selectedByQuestion[questionId];
   if (!stored) return null;
-  if (typeof stored === "string") {
-    delete selectedByQuestion[questionId];
-    persistSelection();
-    return null;
-  }
-  if (stored.version !== question.voteVersion) {
+  if (typeof stored === "string" || stored.version !== question.voteVersion) {
     delete selectedByQuestion[questionId];
     persistSelection();
     return null;
@@ -78,20 +77,21 @@ function renderVote(state) {
 
 async function submitVote(optionId) {
   if (!currentState || pendingOption) return;
-  const { currentQuestionId } = currentState.systemState;
+  const { currentQuestionId, status } = currentState.systemState;
+  if (status !== "active") {
+    showToast("目前未開放投票");
+    return;
+  }
+
   pendingOption = optionId;
   renderVote(currentState);
 
   try {
-    const result = await postJson("/api/vote", {
-      voterId,
-      questionId: currentQuestionId,
-      optionId
-    });
+    const result = await submitFirebaseVote(currentQuestionId, optionId);
     if (result.selectedOption) {
       selectedByQuestion[currentQuestionId] = {
         option: result.selectedOption,
-        version: result.voteVersion
+        version: currentState.questions[currentQuestionId].voteVersion
       };
       showToast("投票已更新");
     } else {
@@ -100,11 +100,18 @@ async function submitVote(optionId) {
     }
     persistSelection();
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message || "投票失敗，請稍後再試。");
   } finally {
     pendingOption = null;
     if (currentState) renderVote(currentState);
   }
 }
 
-connectEvents(renderVote);
+ensureAnonymousUser()
+  .then((user) => {
+    currentUser = user;
+    connectVoterEvents(user.uid, renderVote);
+  })
+  .catch((error) => {
+    showToast(error.message || "無法連線 Firebase");
+  });

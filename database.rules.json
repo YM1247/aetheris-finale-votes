@@ -1,0 +1,54 @@
+{
+  "rules": {
+    ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+    ".write": false,
+    "systemState": {
+      ".read": "auth != null",
+      ".write": "root.child('admins').child(auth.uid).val() === true",
+      "currentQuestionId": {
+        ".validate": "newData.val() === 'q1' || newData.val() === 'q2' || newData.val() === 'q3' || newData.val() === 'q4' || newData.val() === 'q5' || newData.val() === 'q6' || newData.val() === 'q7' || newData.val() === 'q8' || newData.val() === 'q9' || newData.val() === 'q10'"
+      },
+      "status": {
+        ".validate": "newData.val() === 'waiting' || newData.val() === 'active' || newData.val() === 'locked'"
+      }
+    },
+    "questions": {
+      ".read": "auth != null",
+      "$qid": {
+        ".write": "root.child('admins').child(auth.uid).val() === true",
+        ".validate": "$qid === 'q1' || $qid === 'q2' || $qid === 'q3' || $qid === 'q4' || $qid === 'q5' || $qid === 'q6' || $qid === 'q7' || $qid === 'q8' || $qid === 'q9' || $qid === 'q10'",
+        "title": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+        },
+        "voteVersion": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "options": {
+          "$option": {
+            ".validate": "($option === 'optA' || $option === 'optB' || $option === 'optC' || $option === 'optD') && newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+          }
+        },
+        "$other": {
+          ".validate": "$other === 'title' || $other === 'voteVersion' || $other === 'options'"
+        }
+      }
+    },
+    "userVotes": {
+      ".write": "root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "$uid === auth.uid || root.child('admins').child(auth.uid).val() === true",
+        "$qid": {
+          ".write": "root.child('admins').child(auth.uid).val() === true || ($uid === auth.uid && root.child('systemState/status').val() === 'active' && root.child('systemState/currentQuestionId').val() === $qid)",
+          ".validate": "newData.val() === 'optA' || newData.val() === 'optB' || newData.val() === 'optC' || newData.val() === 'optD'"
+        }
+      }
+    },
+    "admins": {
+      "$uid": {
+        ".read": "$uid === auth.uid || root.child('admins').child(auth.uid).val() === true",
+        ".validate": "newData.val() === true"
+      },
+      ".write": "root.child('admins').child(auth.uid).val() === true"
+    }
+  }
+}

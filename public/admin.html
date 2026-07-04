@@ -13,6 +13,7 @@
         <p class="eyebrow">Aetheris Finale</p>
         <h1>主辦後台</h1>
         <form id="loginForm" class="login-form">
+          <input id="adminEmail" type="email" autocomplete="username" placeholder="管理員 Email" aria-label="管理員 Email">
           <input id="password" type="password" autocomplete="current-password" placeholder="後台密碼" aria-label="後台密碼">
           <button type="submit">登入</button>
         </form>
@@ -29,6 +30,7 @@
           <div class="header-actions">
             <span id="adminStatus" class="pill neutral">等待開放</span>
             <a id="voteLink" class="ghost-link" href="/vote" target="_blank">開啟前台</a>
+            <button id="logoutButton" class="ghost-button" type="button">登出</button>
           </div>
         </header>
 
@@ -96,6 +98,10 @@
 
     <div id="adminToast" class="toast" role="status" aria-live="polite"></div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics-compat.js"></script>
     <script src="/app.js"></script>
     <script src="/admin.js"></script>
   </body>

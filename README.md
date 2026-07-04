@@ -1,6 +1,6 @@
 # Aetheris Finale Votes
 
-活動現場用的即時投票系統，包含觀眾端 `/vote` 與主辦後台 `/admin`。
+活動現場用的即時投票系統，包含觀眾端 `/vote` 與主辦後台 `/admin`。目前前端使用 Firebase Authentication + Realtime Database 即時同步，可部署到 Firebase Hosting。
 
 ## 啟動
 
@@ -13,33 +13,60 @@ npm start
 - 觀眾端：http://localhost:3000/vote
 - 主辦後台：http://localhost:3000/admin
 
-預設後台密碼是 `admin123`，正式活動建議用環境變數覆蓋：
-
-```bash
-ADMIN_PASSWORD=your-password npm start
-```
-
-若部署環境有 persistent disk，可以用 `DATA_DIR` 指定票數狀態檔存放位置：
-
-```bash
-DATA_DIR=/data ADMIN_PASSWORD=your-password npm start
-```
+本機 `npm start` 只負責提供靜態頁面；實際投票資料會寫入 Firebase Realtime Database。
 
 ## 功能
 
 - 10 題，每題 4 個選項
-- 觀眾匿名 UUID 識別
+- 觀眾 Firebase 匿名登入識別
 - 投票中可改票或再次點擊取消
 - 主辦可開始、鎖定、等待、重置本題、切換題目、重置全部
 - 後台即時顯示票數與比例
 - 後台可直接編輯題目與選項
-- SSE 即時同步，投票計算集中在伺服器端完成
+- Firebase Realtime Database 即時同步
+- 後台從 `userVotes` 即時彙總票數，避免多人同時投票時直接競爭票數計數器
 
-投票狀態會寫入 `data/state.json`，此檔案已被 `.gitignore` 排除，避免活動票數被提交進版本庫。
+Firebase Hosting 會部署 `public/`，因此圖片素材已放在 `public/img/`。
 
 ## 部署上線
 
-這個版本使用常駐 Node.js server 與 SSE 即時同步，建議部署到支援長時間執行服務的平台，例如 Render、Railway、Fly.io 或一台 VPS。若部署到 Vercel/Netlify 這類 Serverless 平台，SSE 與本機檔案保存不適合直接使用，建議改接 Firebase Realtime Database 或 Supabase Realtime。
+### Firebase Hosting + Realtime Database
+
+此版本已可用 Firebase Hosting + Realtime Database 部署，不需要 Render 常駐 server。
+
+第一次設定：
+
+1. 到 Firebase Console 啟用 Authentication 的 `Anonymous` 與 `Email/Password` 登入方式。
+2. 啟用 Realtime Database。若你的 database URL 不是 `https://aetheris-finale-votes-default-rtdb.firebaseio.com`，請修改 `public/app.js` 的 `databaseURL`。
+3. 建立一個 Email/Password 管理員帳號。
+4. 在 Authentication 使用者列表複製這個管理員的 UID。
+5. 在 Realtime Database Console 匯入 `database.seed.json` 作為初始資料。
+6. 在 Realtime Database Console 手動寫入：
+
+```json
+{
+  "admins": {
+    "你的管理員 UID": true
+  }
+}
+```
+
+7. 部署 rules 與 hosting：
+
+```bash
+firebase deploy --only database,hosting
+```
+
+部署完成後：
+
+- 觀眾端：`https://aetheris-finale-votes.web.app/vote`
+- 主辦後台：`https://aetheris-finale-votes.web.app/admin`
+
+後台登入改用 Firebase Authentication 的管理員 Email/Password。觀眾端使用匿名登入，票數由後台即時彙總 `userVotes`，不再使用本機 `data/state.json`。
+
+### Render
+
+Render 也可以部署這個 repo，但現在 Render 只會作為靜態頁面伺服器；資料仍會走 Firebase Realtime Database。若使用 Firebase Hosting，通常不需要再部署 Render。
 
 ### Render 範例
 
@@ -57,14 +84,13 @@ DATA_DIR=/data ADMIN_PASSWORD=your-password npm start
 - Runtime：`Node`
 - Build Command：`npm install`
 - Start Command：`npm start`
-- Environment Variables：`ADMIN_PASSWORD=你的後台密碼`，`DATA_DIR=/data`
+- Environment Variables：可留空
 - Region：建議選 `Singapore`
-- Disk：掛載到 `/data`，大小 1 GB 即可
+- Disk：不需要
 
 ### 重要提醒
 
-- 免費平台可能會休眠，活動前務必提前打開後台暖機。
-- 多台 instance 會造成票數狀態不同步；請先使用單一 instance。
-- `data/state.json` 是本機檔案，平台重啟可能清空或回復。正式大型活動建議改接 Firebase/Supabase，或在部署平台掛 persistent disk。
+- Firebase Realtime Database rules 需要先確認管理員 UID 已寫入 `admins/{uid}: true`，否則後台無法控制投票。
+- Firebase project 的 Realtime Database URL 若不是預設值，必須同步修改 `public/app.js`。
 - 若使用自己的網域，請確認 HTTPS 已啟用，手機瀏覽器才會穩定允許 localStorage 與即時連線。
 - QR code 目前由公開服務即時產生；若場地網路會擋外部圖片，建議部署後先下載 QR 圖，改成放在 `img/` 內當本機素材。
